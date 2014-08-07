@@ -1,3 +1,7 @@
+# modification
+ * All popovers will hide when user clicks on document body.
+ * Shown popover will hide when other popover is triggered.
+
 # nsPopover
 
 ``nsPopover`` is a simple component for angularjs applications that adds small overlays of content, like those on the
