@@ -5,8 +5,9 @@
   var $el = angular.element;
   var isDef = angular.isDefined;
   var forEach = angular.forEach;
-  var $popovers = [];
+  var $popovers = {};
   var globalId = 0;
+  var idprefix = "id_"
 
   module.directive('nsPopover', function($timeout, $templateCache, $q, $http, $compile, $document) {
     return {
@@ -20,7 +21,6 @@
           trigger: attrs.nsPopoverTrigger || 'click',
           container: attrs.nsPopoverContainer,
           placement: attrs.nsPopoverPlacement || 'bottom|left',
-          timeout: attrs.nsPopoverTimeout || 1.5,
           hideOnClick: attrs.nsPopoverHideOnClick === 'true' || attrs.nsPopoverHideOnClick === undefined
         };
 
@@ -65,7 +65,7 @@
         globalId += 1;
 
         var $popover = $el('<div id="nspopover-' + globalId +'"></div>');
-        $popovers.push($popover);
+        $popovers[idprefix + globalId] = {popover: $popover, hider_: hider_};
 
         var match = options.placement
           .match(/^(top|bottom|left|right)$|((top|bottom)\|(center|left|right)+)|((left|right)\|(center|top|bottom)+)/);
@@ -102,6 +102,7 @@
 
           scope.$on('$destroy', function() {
             $popover.remove();
+            delete $popovers[idprefix + globalId];
           });
 
           scope.hidePopover = function() {
@@ -137,10 +138,12 @@
 
         elm.on(options.trigger, function(e) {
           e.preventDefault();
+          e.stopPropagation();
+          forEach($popovers, function(p) {
+            p.hider_.hide(p.popover, 0);
+          });
 
-          hider_.cancel();
-
-          $popover.css('display', 'block');
+          $timeout(function() {$popover.css('display', 'block')});
 
           // position the popover accordingly to the defined placement around the
           // |elm|.
@@ -154,22 +157,11 @@
           }
         });
 
-        elm
-          .on('mouseout', function() {
-            hider_.hide($popover, options.timeout);
-          })
-          .on('mouseover', function() {
-            hider_.cancel();
+        $document.on('click', function(e) {
+          forEach($popovers, function(p) {
+            p.hider_.hide(p.popover, 0);
           });
-
-        $popover
-          .on('mouseout', function(e) {
-            hider_.hide($popover, options.timeout);
-          })
-          .on('mouseover', function() {
-            hider_.cancel();
-          });
-
+        });
         /**
          * Move the popover to the |placement| position of the object located on the |rect|.
          *
